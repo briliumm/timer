@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>카이로넥 타이머</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f8f6;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.12);
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b66;
+      --text-muted: #9b9b95;
+      --radius: 8px;
+
+      --success-bg: #eaf3de;
+      --success-text: #3b6d11;
+      --success-fill: #639922;
+      --warning-bg: #faeeda;
+      --warning-text: #854f0b;
+      --warning-fill: #ba7517;
+      --accent-bg: #e6f1fb;
+      --accent-text: #185fa5;
+      --accent-fill: #378add;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --surface: #2a2a27;
+        --border: rgba(255,255,255,0.12);
+        --text-primary: #f0f0ec;
+        --text-secondary: #a0a09a;
+        --text-muted: #6b6b66;
+
+        --success-bg: #173404;
+        --success-text: #c0dd97;
+        --success-fill: #639922;
+        --warning-bg: #412402;
+        --warning-text: #fac775;
+        --warning-fill: #ba7517;
+        --accent-bg: #042c53;
+        --accent-text: #b5d4f4;
+        --accent-fill: #378add;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 2.5rem 1.5rem;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 0.5px solid var(--border);
+      width: 100%;
+      max-width: 360px;
+      margin: 1rem;
+    }
+
+    h1 {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .status-badge {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 5px 16px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+      transition: background 0.3s, color 0.3s;
+      background: var(--bg);
+      color: var(--text-secondary);
+      border: 0.5px solid var(--border);
+    }
+    .badge-exercise { background: var(--success-bg); color: var(--success-text); border: none; }
+    .badge-rest     { background: var(--warning-bg); color: var(--warning-text); border: none; }
+    .badge-done     { background: var(--accent-bg);  color: var(--accent-text);  border: none; }
+
+    .circle-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .circle-wrap svg {
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .circle-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .time-display {
+      font-size: 56px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .time-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .set-info {
+      display: flex;
+      gap: 2.5rem;
+    }
+    .set-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .set-num {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .set-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .dots {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 280px;
+    }
+    .dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .dot.done    { background: var(--success-fill); border-color: var(--success-fill); }
+    .dot.current { background: var(--accent-fill);  border-color: var(--accent-fill); }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      padding: 0 28px;
+      height: 44px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { opacity: 0.8; }
+    .btn.primary {
+      background: var(--accent-fill);
+      color: #fff;
+      border-color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>카이로넥 타이머</h1>
+
+    <span class="status-badge" id="badge">준비</span>
+
+    <div class="circle-wrap">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle cx="110" cy="110" r="98" fill="none" stroke="var(--border)" stroke-width="8"/>
+        <circle id="prog-circle" cx="110" cy="110" r="98" fill="none"
+          stroke="var(--accent-fill)" stroke-width="8"
+          stroke-dasharray="615.75" stroke-dashoffset="615.75"
+          stroke-linecap="round"
+          style="transform: rotate(-90deg); transform-origin: 110px 110px;
+                 transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease;"/>
+      </svg>
+      <div class="circle-center">
+        <span class="time-display" id="time-display">10</span>
+        <span class="time-label" id="phase-label">운동 준비</span>
+      </div>
+    </div>
+
+    <div class="set-info">
+      <div class="set-item">
+        <span class="set-num" id="cur-set">0</span>
+        <span class="set-label">완료 세트</span>
+      </div>
+      <div class="set-item">
+        <span class="set-num">10</span>
+        <span class="set-label">전체 세트</span>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="start-btn" onclick="handleStart()">
+        <i class="ti ti-player-play"></i> 시작
+      </button>
+      <button class="btn" id="reset-btn" onclick="handleReset()" style="display:none">
+        <i class="ti ti-refresh"></i> 초기화
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL_SETS = 10;
+    const EXERCISE_SEC = 10;
+    const REST_SEC = 4;
+    const CIRCUMFERENCE = 2 * Math.PI * 98;
+
+    let timer = null;
+    let currentSet = 0;
+    let phase = 'idle';
+    let remaining = EXERCISE_SEC;
+    let audioCtx = null;
+
+    const badge       = document.getElementById('badge');
+    const timeDisplay = document.getElementById('time-display');
+    const phaseLabel  = document.getElementById('phase-label');
+    const curSet      = document.getElementById('cur-set');
+    const progCircle  = document.getElementById('prog-circle');
+    const startBtn    = document.getElementById('start-btn');
+    const resetBtn    = document.getElementById('reset-btn');
+    const dotsEl      = document.getElementById('dots');
+
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function beep(type) {
+      const ctx = getAudioCtx();
+      if (type === 'done') {
+        [523, 659, 784].forEach((f, i) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = f;
+          const t = ctx.currentTime + i * 0.18;
+          g.gain.setValueAtTime(0.3, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+          o.start(t); o.stop(t + 0.2);
+        });
+        return;
+      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = type === 'start' ? 880 : 660;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    }
+
+    function buildDots() {
+      dotsEl.innerHTML = '';
+      for (let i = 0; i < TOTAL_SETS; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot';
+        d.id = 'dot-' + i;
+        dotsEl.appendChild(d);
+      }
+    }
+
+    function updateDots() {
+      for (let i = 0; i < TOTAL_SETS; i++) {
+        const d = document.getElementById('dot-' + i);
+        d.className = 'dot';
+        if (i < currentSet) d.classList.add('done');
+        else if (i === currentSet && phase === 'exercise') d.classList.add('current');
+      }
+    }
+
+    function setProgress(ratio, color) {
+      progCircle.style.stroke = color;
+      progCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, ratio)));
+    }
+
+    function tick() {
+      if (remaining < 0) {
+        if (phase === 'exercise') {
+          beep('end');
+          currentSet++;
+          curSet.textContent = currentSet;
+          updateDots();
+          if (currentSet >= TOTAL_SETS) { finishAll(); return; }
+          startRest();
+        } else {
+          startExercise();
+        }
+        return;
+      }
+      timeDisplay.textContent = remaining;
+      if (phase === 'exercise') {
+        setProgress((EXERCISE_SEC - remaining) / EXERCISE_SEC, 'var(--success-fill)');
+      } else {
+        setProgress((REST_SEC - remaining) / REST_SEC, 'var(--warning-fill)');
+      }
+      remaining--;
+    }
+
+    function startExercise() {
+      phase = 'exercise';
+      remaining = EXERCISE_SEC;
+      beep('start');
+      badge.className = 'status-badge badge-exercise';
+      badge.textContent = '운동 중';
+      phaseLabel.textContent = '운동';
+      progCircle.style.strokeDashoffset = CIRCUMFERENCE;
+      updateDots();
+      setTimeout(tick, 50);
+    }
+
+    function startRest() {
+      phase = 'rest';
+      remaining = REST_SEC;
+      badge.className = 'status-badge badge-rest';
+      badge.textContent = '휴식 중';
+      phaseLabel.textContent = '휴식';
+      progCircle.style.strokeDashoffset = CIRCUMFERENCE;
+      setTimeout(tick, 50);
+    }
+
+    function finishAll() {
+      clearInterval(timer); timer = null;
+      phase = 'done';
+      beep('done');
+      badge.className = 'status-badge badge-done';
+      badge.textContent = '완료!';
+      timeDisplay.textContent = '🎉';
+      phaseLabel.textContent = '10세트 완료';
+      progCircle.style.stroke = 'var(--accent-fill)';
+      progCircle.style.strokeDashoffset = 0;
+      startBtn.style.display = 'none';
+      resetBtn.style.display = '';
+    }
+
+    function handleStart() {
+      if (phase === 'idle') {
+        startBtn.innerHTML = '<i class="ti ti-player-pause"></i> 일시정지';
+        resetBtn.style.display = '';
+        timer = setInterval(tick, 1000);
+        startExercise();
+      } else if (timer) {
+        clearInterval(timer); timer = null;
+        badge.textContent = '일시정지';
+        badge.className = 'status-badge';
+        startBtn.innerHTML = '<i class="ti ti-player-play"></i> 계속';
+      } else {
+        timer = setInterval(tick, 1000);
+        badge.className = phase === 'exercise' ? 'status-badge badge-exercise' : 'status-badge badge-rest';
+        badge.textContent = phase === 'exercise' ? '운동 중' : '휴식 중';
+        startBtn.innerHTML = '<i class="ti ti-player-pause"></i> 일시정지';
+      }
+    }
+
+    function handleReset() {
+      clearInterval(timer); timer = null;
+      phase = 'idle'; currentSet = 0; remaining = EXERCISE_SEC;
+      badge.className = 'status-badge'; badge.textContent = '준비';
+      timeDisplay.textContent = EXERCISE_SEC;
+      phaseLabel.textContent = '운동 준비';
+      curSet.textContent = '0';
+      progCircle.style.stroke = 'var(--accent-fill)';
+      progCircle.style.strokeDashoffset = CIRCUMFERENCE;
+      startBtn.style.display = '';
+      startBtn.innerHTML = '<i class="ti ti-player-play"></i> 시작';
+      resetBtn.style.display = 'none';
+      buildDots();
+    }
+
+    buildDots();
+  </script>
+</body>
+</html>
